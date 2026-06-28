@@ -6,20 +6,14 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { Pool } = require('pg');
+
 
 // Path to the physical storage directory
 const STORAGE_DIR = path.join(__dirname, '../../storage/blobs');
 
 // Database Connection
 // In a real production environment, load these from process.env
-const pool = new Pool({
-    user: 'postgres',
-    host: 'localhost',
-    database: 'dropbox_clone',
-    password: 'password',
-    port: 5432,
-});
+const pool = require('./db/pool');
 
 /**
  * Generates a SHA-256 hash for content-addressable storage.
