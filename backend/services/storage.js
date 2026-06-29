@@ -13,7 +13,7 @@ const STORAGE_DIR = path.join(__dirname, '../../storage/blobs');
 
 // Database Connection
 // In a real production environment, load these from process.env
-const pool = require('./db/pool');
+const pool = require('../db/pool');
 
 /**
  * Generates a SHA-256 hash for content-addressable storage.
@@ -32,54 +32,33 @@ function generateHash(buffer) {
  * @param {number} userId - The owner ID
  * @returns {Promise<FileVersion>} The newly created version record
  */
-async function handleFileUpload(fileBuffer, originalName, fileId, userId) {
+async function handleFileUpload(fileBuffer, fileId = null) { // Made fileId optional
     const hash = generateHash(fileBuffer);
     const filePath = path.join(STORAGE_DIR, hash);
 
-    // 1. Check if hash exists in 'blobs' table
+    // 1. Storage Logic (The Blob part)
     const blobCheck = await pool.query('SELECT * FROM blobs WHERE hash = $1', [hash]);
-    
     if (blobCheck.rows.length === 0) {
-        // IF NO: Write buffer to disk
-        
-        // Failsafe: Ensure the directory exists before writing
-        if (!fs.existsSync(STORAGE_DIR)) {
-            fs.mkdirSync(STORAGE_DIR, { recursive: true });
-        }
-        
+        if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR, { recursive: true });
         await fs.promises.writeFile(filePath, fileBuffer);
-        
-        // Insert into real 'blobs' table
-        await pool.query(
-            'INSERT INTO blobs (hash, storage_path, size, ref_count) VALUES ($1, $2, $3, $4)', 
-            [hash, filePath, fileBuffer.length, 1]
-        );
-        console.log(`[Storage] New physical blob written: ${hash}`);
+        await pool.query('INSERT INTO blobs (hash, storage_path, size, ref_count) VALUES ($1, $2, $3, $4)', 
+            [hash, filePath, fileBuffer.length, 1]);
     } else {
-        // IF YES: Increment ref_count (Deduplication)
-        await pool.query(
-            'UPDATE blobs SET ref_count = ref_count + 1 WHERE hash = $1', 
-            [hash]
-        );
-        console.log(`[Storage] Deduplicated! Ref count incremented for: ${hash}`);
+        await pool.query('UPDATE blobs SET ref_count = ref_count + 1 WHERE hash = $1', [hash]);
     }
 
-    // 2. Insert new row into 'file_versions'
-    // Let Postgres calculate the next version number dynamically
-    const existingVersions = await pool.query(
-        'SELECT COUNT(*) FROM file_versions WHERE file_id = $1', 
-        [fileId]
-    );
-    const nextVersionNumber = parseInt(existingVersions.rows[0].count) + 1;
+    // 2. Versioning Logic (Only run this IF we have a fileId)
+    if (fileId) {
+        const existingVersions = await pool.query('SELECT COUNT(*) FROM file_versions WHERE file_id = $1', [fileId]);
+        const nextVersionNumber = parseInt(existingVersions.rows[0].count) + 1;
+        const versionInsert = await pool.query(
+            `INSERT INTO file_versions (file_id, hash, version_number) VALUES ($1, $2, $3) RETURNING *`,
+            [fileId, hash, nextVersionNumber]
+        );
+        return versionInsert.rows[0];
+    }
 
-    // Use RETURNING * so Postgres hands back the newly created row immediately
-    const versionInsert = await pool.query(
-        `INSERT INTO file_versions (file_id, hash, version_number) 
-         VALUES ($1, $2, $3) RETURNING *`,
-        [fileId, hash, nextVersionNumber]
-    );
-
-    return versionInsert.rows[0];
+    return { hash }; // Return just the hash if we haven't done versioning yet
 }
 
 /**
