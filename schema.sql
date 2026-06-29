@@ -28,6 +28,7 @@ CREATE TABLE files (
     folder_id INTEGER REFERENCES folders(id) ON DELETE CASCADE,
     owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     current_hash VARCHAR(64) NOT NULL REFERENCES blobs(hash) ON DELETE RESTRICT,
+    is_deleted BOOLEAN DEFAULT FALSE, -- Added for Soft Delete
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(owner_id, folder_id, name)
