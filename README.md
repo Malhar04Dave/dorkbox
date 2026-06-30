@@ -1,9 +1,8 @@
 # dorkbox
-# dorkbox 📦
 
-dorkbox is a full-stack, highly optimized cloud storage and file-sharing platform. It allows users to securely upload, manage, search, and share files within a nested folder hierarchy. 
+dorkbox is a full-stack, highly optimized cloud storage platform. It allows users to securely upload, manage, and search within a nested folder hierarchy. 
 
-The system features a custom-built **Content-Addressable Storage (CAS)** engine for zero-cost file deduplication, a **Trie-backed** search service, and a custom **LRU Cache** for rapid metadata retrieval.
+The system features a custom-built **Content-Addressable Storage (CAS)** engine for zero-cost file deduplication, a **Trie-backed** search service, **versioning** to maintain history of updates and a custom **LRU Cache** for rapid metadata retrieval.
 
 ## 🚀 Core Features
 - **Authentication & Security:** Secure user registration and login using JWT.
