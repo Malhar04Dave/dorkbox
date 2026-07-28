@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { mockApi } from '../api/mockApi'
+import { apiClient } from '../api/client'
 
 interface Props {
   onLogin: (token: string) => void
@@ -18,7 +18,7 @@ export default function Login({ onLogin }: Props) {
     }
     setLoading(true)
     try {
-      const res = await mockApi.login(email, password)
+      const res = await apiClient.login(email, password)
       onLogin(res.token)
     } catch (e) {
       setError('Login failed')
