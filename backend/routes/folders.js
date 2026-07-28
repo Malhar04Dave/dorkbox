@@ -20,6 +20,33 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+router.get('/', auth, async (req, res) => {
+  try {
+    // Optional: filter by user if your app requires users to only see their own files
+    // const userId = req.user.id; 
+
+    // Get root subfolders (where parent_id is null)
+    const subfolders = await pool.query(
+      'SELECT * FROM folders WHERE parent_id IS NULL' 
+    );
+    
+    // Get root files (where folder_id is null)
+    const files = await pool.query(
+      'SELECT * FROM files WHERE folder_id IS NULL'
+    );
+
+    // Return the exact structure the frontend expects for the root folder
+    res.json({
+      current_folder: null,
+      breadcrumbs: [],
+      subfolders: subfolders.rows,
+      files: files.rows
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch root folder' });
+  }
+});
+
 // 2. Get Folder Contents (Protected)
 router.get('/:id', auth, async (req, res) => {
   try {
@@ -33,7 +60,8 @@ router.get('/:id', auth, async (req, res) => {
     const files = await pool.query('SELECT * FROM files WHERE folder_id = $1', [folderId]);
 
     res.json({
-      folder: folder.rows[0],
+      current_folder: folder.rows[0],
+      breadcrumbs: [folder.rows[0]], // For a full breadcrumb trail, you would need a recursive SQL query here later
       subfolders: subfolders.rows,
       files: files.rows
     });

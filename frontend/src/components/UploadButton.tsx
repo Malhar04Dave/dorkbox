@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { mockApi } from '../api/mockApi'
+import { apiClient } from '../api/client'
 
 interface Props {
   folderId: number | null
@@ -15,7 +15,7 @@ export default function UploadButton({ folderId, onUploaded }: Props) {
     if (!file) return
     setUploading(true)
     try {
-      await mockApi.upload(file, folderId)
+      await apiClient.upload(file, folderId)
       onUploaded()
     } finally {
       setUploading(false)

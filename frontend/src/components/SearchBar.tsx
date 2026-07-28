@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { mockApi } from '../api/mockApi'
+import { apiClient } from '../api/client'
 
 export default function SearchBar() {
   const [query, setQuery] = useState('')
@@ -12,7 +12,7 @@ export default function SearchBar() {
       setResults([])
       return
     }
-    const res = await mockApi.search(val)
+    const res = await apiClient.search(val)
     setResults(res.results)
   }
 

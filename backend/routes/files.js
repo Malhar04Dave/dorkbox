@@ -4,7 +4,8 @@ const router = express.Router();
 const pool = require('../db/pool');
 const auth = require('../middleware/auth');
 const { handleFileUpload, getFileBuffer } = require('../services/storage');
-const lru = require('../services/cache'); // Import your cache instance;
+const lru = require('../services/cache'); 
+const trie = require('../services/search'); // Added missing trie import to prevent crash on delete
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -50,9 +51,8 @@ router.post('/upload', auth, upload.single('file'), async (req, res) => {
   }
 });
 
-
-
-router.get('/download/:id', auth, async (req, res) => {
+// FIXED: Swapped /download/:id to /:id/download to match frontend
+router.get('/:id/download', auth, async (req, res) => {
   const fileId = req.params.id;
   const userId = req.user.id;
 
@@ -78,8 +78,7 @@ router.get('/download/:id', auth, async (req, res) => {
       lru.put(fileId, file);
     }
 
-    // 3. Get the stream (Note: Physical file streaming isn't usually cached in RAM 
-    // to avoid memory overflow; we only cache the metadata)
+    // 3. Get the stream 
     const stream = await getFileBuffer(file.current_hash);
 
     res.setHeader('Content-Type', 'application/octet-stream');
